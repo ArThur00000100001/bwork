@@ -50,5 +50,5 @@ export class UserEntity {
   joinDate: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updateDate: Date;
 }

@@ -37,6 +37,7 @@ export class AuthService {
     const payload = {
       id: user.id,
       joinDate: user.joinDate,
+      updateDate: user.updateDate,
       fullName: user.fullName,
       firstLastName: user.firstLastName,
       secondLastName: user.secondLastName,
@@ -46,7 +47,6 @@ export class AuthService {
     };
     return {
       token_access: this.jwtService.sign(payload),
-      user: payload,
     };
   }
 }

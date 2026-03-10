@@ -10,13 +10,13 @@ export class AuthController {
   @UseGuards(AuthGuard('local'))
   async login(@Request() req) {
     const data = await this.authService.login(req.user);
-    if (!data.user.active) {
-      return {
-        data: null,
-        message: 'Credenciales invalidas',
-        status: 'Failure',
-      };
-    }
+    // if (!data.user.email) {
+    //   return {
+    //     data: null,
+    //     message: 'Credenciales invalidas',
+    //     status: 'Failure',
+    //   };
+    // }
     return {
       data,
       message: 'Login Exitoso',
