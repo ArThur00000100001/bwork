@@ -8,7 +8,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Repository } from 'typeorm';
 import { UserEntity } from './entities/user.entity';
-import { DataSource } from 'typeorm/browser';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class UsersService {
@@ -17,40 +17,103 @@ export class UsersService {
     this.userRepository = this.dataSource.getRepository(UserEntity);
   }
 
-  async create(createUserDto: CreateUserDto) {
-    const data = await this.userRepository.findOne({
-      where: { email: createUserDto.email },
-    });
+  async create(createUserDto: CreateUserDto): Promise<UserEntity> {
+    const queryRunner = this.dataSource.createQueryRunner();
 
-    if (data) throw new BadRequestException('Usuario ya existente');
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    const createUser = await this.userRepository.create(createUserDto);
+    try {
+      const existUser = await queryRunner.manager.findOne(UserEntity, {
+        where: { email: createUserDto.email },
+      });
+      if (existUser) throw new BadRequestException('Usuario existente.');
+      const userCreate = queryRunner.manager.create(UserEntity, createUserDto);
+      const userSave = await queryRunner.manager.save(userCreate);
 
-    return this.userRepository.save(createUser);
+      await queryRunner.commitTransaction();
+
+      return userSave;
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async findAll() {
-    const data = await this.userRepository.find();
+    const queryRunner = this.dataSource.createQueryRunner();
+    (await queryRunner.connect(), await queryRunner.startTransaction());
 
-    if (!data) throw new NotFoundException('Error al cargar usuarios');
+    try {
+      const data = await queryRunner.manager.find(UserEntity);
+      if (!data) throw new NotFoundException('Error al cargar usuarios');
 
-    return data;
+      await queryRunner.commitTransaction();
+      return data;
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async findOne(id: number) {
-    const data = this.userRepository.findOne({ where: { id } });
-    return data;
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const data = await queryRunner.manager.findOne(UserEntity, {
+        where: { id },
+      });
+      if (!data) throw new NotFoundException('Error al encontrar ususario.');
+
+      await queryRunner.commitTransaction();
+      return data;
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
-    const data = await this.findOne(id);
-    await this.userRepository.update(id, updateUserDto);
-    return data;
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const data = await this.findOne(id);
+      await queryRunner.manager.update(UserEntity, id, updateUserDto);
+
+      await queryRunner.commitTransaction();
+      return data;
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async remove(id: number) {
-    const data = await this.findOne(id);
-    await this.userRepository.delete(id);
-    return data;
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const data = await this.findOne(id);
+      await queryRunner.manager.delete(UserEntity, id);
+      await queryRunner.commitTransaction();
+      return data;
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+    }
   }
 }

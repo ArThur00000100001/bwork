@@ -29,7 +29,7 @@ export class UserEntity {
   email: string;
 
   @Column({ unique: true })
-  phoneNumer: number;
+  phoneNumber: number;
 
   @Column({ length: 255 })
   password: string;
